@@ -1,0 +1,309 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "User preferences and non-PII profile configuration for Samjha AI.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Immutable Firebase Auth UID of the owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "Display name configured by the user.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "language": {
+          "type": "string",
+          "description": "Preferred response language.",
+          "enum": ["English", "Hindi", "Hinglish", "Tamil", "Telugu", "Bengali", "Marathi"],
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "preferredMode": {
+          "type": "string",
+          "description": "Default interaction mode.",
+          "enum": ["standard", "learning", "training", "thinking", "fast", "research"],
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["uid", "displayName", "language", "preferredMode", "createdAt", "updatedAt"]
+    },
+    "Conversation": {
+      "title": "Conversation",
+      "description": "A multi-turn conversation session owned by a user.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "Firebase Auth UID of the conversation owner.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Title of the conversation.",
+          "minLength": 1,
+          "maxLength": 200
+        },
+        "mode": {
+          "type": "string",
+          "description": "Active cognitive mode for the conversation.",
+          "enum": ["standard", "learning", "training", "thinking", "fast", "research"],
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "language": {
+          "type": "string",
+          "description": "Language setting for the conversation.",
+          "enum": ["English", "Hindi", "Hinglish", "Tamil", "Telugu", "Bengali", "Marathi"],
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "modelId": {
+          "type": "string",
+          "description": "Model identifier used in the conversation.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "messageCount": {
+          "type": "integer",
+          "description": "Number of messages in the conversation."
+        },
+        "lastMessagePreview": {
+          "type": "string",
+          "description": "Short preview of the latest message.",
+          "minLength": 0,
+          "maxLength": 500
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "title", "mode", "language", "modelId", "messageCount", "lastMessagePreview", "createdAt", "updatedAt"]
+    },
+    "ChatMessage": {
+      "title": "ChatMessage",
+      "description": "Individual message inside a conversation subcollection.",
+      "type": "object",
+      "properties": {
+        "conversationId": {
+          "type": "string",
+          "description": "ID of the parent conversation document.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the owner of the message.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "role": {
+          "type": "string",
+          "description": "Sender role.",
+          "enum": ["user", "assistant"],
+          "minLength": 4,
+          "maxLength": 16
+        },
+        "content": {
+          "type": "string",
+          "description": "Message text content.",
+          "minLength": 1,
+          "maxLength": 20000
+        },
+        "modelUsed": {
+          "type": "string",
+          "description": "Model identifier that processed or generated the message.",
+          "minLength": 1,
+          "maxLength": 100
+        },
+        "scclTask": {
+          "type": "string",
+          "description": "Serialized SCCL task specification associated with the turn.",
+          "minLength": 0,
+          "maxLength": 8000
+        },
+        "verificationPassed": {
+          "type": "boolean",
+          "description": "Whether VEM verification passed."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        }
+      },
+      "required": ["conversationId", "ownerId", "role", "content", "modelUsed", "scclTask", "verificationPassed", "createdAt"]
+    },
+    "FeedbackItem": {
+      "title": "FeedbackItem",
+      "description": "User feedback and training candidate entry for Training Mode.",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the user submitting feedback.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "conversationId": {
+          "type": "string",
+          "description": "Associated conversation ID.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "promptText": {
+          "type": "string",
+          "description": "Input prompt being evaluated.",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "responseText": {
+          "type": "string",
+          "description": "Model response or improved target response.",
+          "minLength": 1,
+          "maxLength": 10000
+        },
+        "rating": {
+          "type": "integer",
+          "description": "Quality rating from 1 to 5."
+        },
+        "category": {
+          "type": "string",
+          "description": "Feedback classification category.",
+          "enum": ["accuracy", "language_quality", "reasoning", "tool_routing", "safety", "general"],
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "language": {
+          "type": "string",
+          "description": "Language of the example.",
+          "enum": ["English", "Hindi", "Hinglish", "Tamil", "Telugu", "Bengali", "Marathi"],
+          "minLength": 2,
+          "maxLength": 32
+        },
+        "consentForTraining": {
+          "type": "boolean",
+          "description": "Explicit user consent for dataset inclusion."
+        },
+        "approvalStatus": {
+          "type": "string",
+          "description": "Review state in Training Mode.",
+          "enum": ["pending", "approved", "rejected"],
+          "minLength": 6,
+          "maxLength": 16
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "conversationId", "promptText", "responseText", "rating", "category", "language", "consentForTraining", "approvalStatus", "createdAt", "updatedAt"]
+    },
+    "MemoryItem": {
+      "title": "MemoryItem",
+      "description": "Authorized contextual memory item managed by SCEM Context & Memory Module (CPM).",
+      "type": "object",
+      "properties": {
+        "ownerId": {
+          "type": "string",
+          "description": "UID of the user who owns this memory item.",
+          "minLength": 1,
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "title": {
+          "type": "string",
+          "description": "Concise label for the memory item.",
+          "minLength": 1,
+          "maxLength": 120
+        },
+        "content": {
+          "type": "string",
+          "description": "Memory content body.",
+          "minLength": 1,
+          "maxLength": 4000
+        },
+        "memoryType": {
+          "type": "string",
+          "description": "Category of memory (preference, knowledge, project_context).",
+          "enum": ["preference", "knowledge", "project_context"],
+          "minLength": 4,
+          "maxLength": 32
+        },
+        "approved": {
+          "type": "boolean",
+          "description": "Whether the user explicitly approved this memory for retrieval."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server creation timestamp."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server update timestamp."
+        }
+      },
+      "required": ["ownerId", "title", "content", "memoryType", "approved", "createdAt", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Stores per-user non-PII preferences and language/mode settings."
+    },
+    "/conversations/{conversationId}": {
+      "schema": { "$ref": "#/entities/Conversation" },
+      "description": "Top-level conversation metadata owned by a specific user."
+    },
+    "/conversations/{conversationId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Subcollection of messages belonging to a parent conversation."
+    },
+    "/feedback/{feedbackId}": {
+      "schema": { "$ref": "#/entities/FeedbackItem" },
+      "description": "User feedback and training dataset candidates."
+    },
+    "/memories/{memoryId}": {
+      "schema": { "$ref": "#/entities/MemoryItem" },
+      "description": "Authorized CPM contextual memory records."
+    }
+  }
+}

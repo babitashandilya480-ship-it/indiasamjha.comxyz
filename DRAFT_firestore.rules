@@ -1,0 +1,238 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net: Default-deny catch-all
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Reusable Global Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && (
+        request.auth.token.email_verified == true ||
+        request.auth.firebase.sign_in_provider == 'password'
+      );
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidLanguage(lang) {
+      return lang is string && lang.size() >= 2 && lang.size() <= 32 &&
+        lang in ['English', 'Hindi', 'Hinglish', 'Tamil', 'Telugu', 'Bengali', 'Marathi'];
+    }
+
+    function isValidMode(mode) {
+      return mode is string && mode.size() >= 2 && mode.size() <= 32 &&
+        mode in ['standard', 'learning', 'training', 'thinking', 'fast', 'research'];
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'displayName', 'language', 'preferredMode', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'displayName', 'language', 'preferredMode', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.uid == request.auth.uid &&
+        data.displayName is string && data.displayName.size() >= 1 && data.displayName.size() <= 100 &&
+        isValidLanguage(data.language) &&
+        isValidMode(data.preferredMode) &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidConversation(data) {
+      return data.keys().hasAll(['ownerId', 'title', 'mode', 'language', 'modelId', 'messageCount', 'lastMessagePreview', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'title', 'mode', 'language', 'modelId', 'messageCount', 'lastMessagePreview', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 200 &&
+        isValidMode(data.mode) &&
+        isValidLanguage(data.language) &&
+        data.modelId is string && data.modelId.size() >= 1 && data.modelId.size() <= 100 &&
+        data.messageCount is int && data.messageCount >= 0 && data.messageCount <= 10000 &&
+        data.lastMessagePreview is string && data.lastMessagePreview.size() <= 500 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidChatMessage(data, conversationId) {
+      return data.keys().hasAll(['conversationId', 'ownerId', 'role', 'content', 'modelUsed', 'scclTask', 'verificationPassed', 'createdAt']) &&
+        data.keys().hasOnly(['conversationId', 'ownerId', 'role', 'content', 'modelUsed', 'scclTask', 'verificationPassed', 'createdAt']) &&
+        data.conversationId is string && data.conversationId.size() >= 1 && data.conversationId.size() <= 128 && data.conversationId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.conversationId == conversationId &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.role is string && data.role.size() >= 4 && data.role.size() <= 16 && data.role in ['user', 'assistant'] &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 20000 &&
+        data.modelUsed is string && data.modelUsed.size() >= 1 && data.modelUsed.size() <= 100 &&
+        data.scclTask is string && data.scclTask.size() <= 8000 &&
+        data.verificationPassed is bool &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidFeedbackItem(data) {
+      return data.keys().hasAll(['ownerId', 'conversationId', 'promptText', 'responseText', 'rating', 'category', 'language', 'consentForTraining', 'approvalStatus', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'conversationId', 'promptText', 'responseText', 'rating', 'category', 'language', 'consentForTraining', 'approvalStatus', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.conversationId is string && data.conversationId.size() >= 1 && data.conversationId.size() <= 128 && data.conversationId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.promptText is string && data.promptText.size() >= 1 && data.promptText.size() <= 4000 &&
+        data.responseText is string && data.responseText.size() >= 1 && data.responseText.size() <= 10000 &&
+        data.rating is int && data.rating >= 1 && data.rating <= 5 &&
+        data.category is string && data.category.size() >= 2 && data.category.size() <= 32 &&
+        data.category in ['accuracy', 'language_quality', 'reasoning', 'tool_routing', 'safety', 'general'] &&
+        isValidLanguage(data.language) &&
+        data.consentForTraining is bool &&
+        data.approvalStatus is string && data.approvalStatus.size() >= 6 && data.approvalStatus.size() <= 16 &&
+        data.approvalStatus in ['pending', 'approved', 'rejected'] &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidMemoryItem(data) {
+      return data.keys().hasAll(['ownerId', 'title', 'content', 'memoryType', 'approved', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['ownerId', 'title', 'content', 'memoryType', 'approved', 'createdAt', 'updatedAt']) &&
+        data.ownerId is string && data.ownerId.size() >= 1 && data.ownerId.size() <= 128 && data.ownerId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.ownerId == request.auth.uid &&
+        data.title is string && data.title.size() >= 1 && data.title.size() <= 120 &&
+        data.content is string && data.content.size() >= 1 && data.content.size() <= 4000 &&
+        data.memoryType is string && data.memoryType.size() >= 4 && data.memoryType.size() <= 32 &&
+        data.memoryType in ['preference', 'knowledge', 'project_context'] &&
+        data.approved is bool &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    // Connection health check endpoint (read-only for signed-in users, never writable)
+    match /test/connection {
+      allow get: if isSignedIn();
+      allow list, write: if false;
+    }
+
+    // Collection 1: /users/{userId}
+    match /users/{userId} {
+      allow get: if isSignedIn() && isValidId(userId) && request.auth.uid == userId;
+      allow list: if false;
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        request.auth.uid == userId &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['displayName', 'language', 'preferredMode', 'updatedAt']);
+      allow delete: if isVerifiedUser() && isValidId(userId) && request.auth.uid == userId;
+    }
+
+    // Collection 2: /conversations/{conversationId}
+    match /conversations/{conversationId} {
+      allow get: if isSignedIn() && isValidId(conversationId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(conversationId) &&
+        isValidConversation(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(conversationId) &&
+        isValidConversation(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'mode', 'language', 'modelId', 'messageCount', 'lastMessagePreview', 'updatedAt']);
+      allow delete: if isVerifiedUser() && isValidId(conversationId) && existing().ownerId == request.auth.uid;
+
+      // Subcollection: /conversations/{conversationId}/messages/{messageId}
+      match /messages/{messageId} {
+        allow get: if isSignedIn() &&
+          isValidId(conversationId) &&
+          isValidId(messageId) &&
+          existing().ownerId == request.auth.uid &&
+          exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerId == request.auth.uid;
+        allow list: if isSignedIn() &&
+          isValidId(conversationId) &&
+          resource.data.ownerId == request.auth.uid &&
+          resource.data.conversationId == conversationId;
+        allow create: if isVerifiedUser() &&
+          isValidId(conversationId) &&
+          isValidId(messageId) &&
+          isValidChatMessage(incoming(), conversationId) &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerId == request.auth.uid;
+        allow update: if false;
+        allow delete: if isVerifiedUser() &&
+          isValidId(conversationId) &&
+          isValidId(messageId) &&
+          existing().ownerId == request.auth.uid &&
+          exists(/databases/$(database)/documents/conversations/$(conversationId)) &&
+          get(/databases/$(database)/documents/conversations/$(conversationId)).data.ownerId == request.auth.uid;
+      }
+    }
+
+    // Collection 3: /feedback/{feedbackId}
+    match /feedback/{feedbackId} {
+      allow get: if isSignedIn() && isValidId(feedbackId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(feedbackId) &&
+        isValidFeedbackItem(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        exists(/databases/$(database)/documents/conversations/$(incoming().conversationId)) &&
+        get(/databases/$(database)/documents/conversations/$(incoming().conversationId)).data.ownerId == request.auth.uid;
+      allow update: if isVerifiedUser() &&
+        isValidId(feedbackId) &&
+        isValidFeedbackItem(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().conversationId == existing().conversationId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['rating', 'category', 'consentForTraining', 'approvalStatus', 'responseText', 'updatedAt']);
+      allow delete: if isVerifiedUser() && isValidId(feedbackId) && existing().ownerId == request.auth.uid;
+    }
+
+    // Collection 4: /memories/{memoryId}
+    match /memories/{memoryId} {
+      allow get: if isSignedIn() && isValidId(memoryId) && existing().ownerId == request.auth.uid;
+      allow list: if isSignedIn() && resource.data.ownerId == request.auth.uid;
+      allow create: if isVerifiedUser() &&
+        isValidId(memoryId) &&
+        isValidMemoryItem(incoming()) &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time;
+      allow update: if isVerifiedUser() &&
+        isValidId(memoryId) &&
+        isValidMemoryItem(incoming()) &&
+        existing().ownerId == request.auth.uid &&
+        incoming().ownerId == existing().ownerId &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time &&
+        incoming().diff(existing()).affectedKeys().hasOnly(['title', 'content', 'memoryType', 'approved', 'updatedAt']);
+      allow delete: if isVerifiedUser() && isValidId(memoryId) && existing().ownerId == request.auth.uid;
+    }
+  }
+}

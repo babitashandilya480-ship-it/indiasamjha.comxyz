@@ -1,0 +1,6 @@
+{
+  "name": "Samjha AI",
+  "description": "Cognitive AI Assistant powered by SCEM, SCCL, and Samjha Small Brain with multi-turn reasoning, multimodal intelligence, and Google Chat integration.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
